@@ -5,20 +5,23 @@ pipeline {
       args '--user root -v /var/run/docker.sock:/var/run/docker.sock' // mount Docker socket to access the host's Docker daemon
     }
   }
+  
   stages {
     stage('Checkout') {
       steps {
         sh 'echo passed'
-        //git branch: 'main', url: 'https://github.com/riasdi/Jenkins-Zero-To-Hero.git'
+        // git branch: 'main', url: 'https://github.com/riasdi/Jenkins-Zero-To-Hero.git'
       }
     }
+
     stage('Build and Test') {
       steps {
         sh 'ls -ltr'
-        // build the project and create a JAR file
+        // Build the project and create a JAR file
         sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && mvn clean package'
       }
     }
+
     stage('Static Code Analysis') {
       environment {
         SONAR_URL = "http://18.234.57.223:9000"
@@ -32,6 +35,7 @@ pipeline {
         }
       }
     }
+
     stage('Build and Push Docker Image') {
       environment {
         DOCKER_IMAGE = "rivadias/ultimate-cicd:${BUILD_NUMBER}"
@@ -50,6 +54,7 @@ pipeline {
         }
       }
     }
+
     stage('Update Deployment File') {
       environment {
         GIT_REPO_NAME = "Jenkins-Zero-To-Hero"
@@ -58,12 +63,12 @@ pipeline {
       steps {
         withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
           sh '''
+            #!/bin/bash
+            set -e  # Exit immediately if a command exits with a non-zero status
+
             # Set Git configuration
             git config user.email "riva.xyz@gmail.com"
             git config user.name "Riva Dias"
-
-            # Assign BUILD_NUMBER
-            BUILD_NUMBER=${BUILD_NUMBER}
 
             # Update the deployment YAML with the new image tag
             sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" \
